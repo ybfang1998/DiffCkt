@@ -1,0 +1,10 @@
+__pycache__/
+outputs/
+.idea/
+test.ipynb
+/datasets/
+simulation/
+/unzipped_data/
+.DS_Store
+*.sh
+*.ipynb

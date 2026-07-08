@@ -1,0 +1,3 @@
+Diffckt:
+  input_dims: {'X': 19, 'E': 25, 'y': 13}
+  output_dims: {'X': 19,'E': 25, 'y': 0}

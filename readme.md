@@ -1,4 +1,4 @@
-# DiffCkt Open Source Circuit Dataset README
+# DiffCkt Open Source Circuit Dataset README (This is an Implementation of Diffckt in Pytorch)
 
 ## 1. Dataset Overview
 

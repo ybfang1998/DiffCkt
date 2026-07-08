@@ -1,0 +1,11 @@
+defaults:
+    - _self_
+    - experiments : DiffCkt_Diffckt
+    - train : train_default
+    - model : DiffCkt
+    - datasets: Diffckt
+hydra:
+  job:
+    chdir: True
+  run:
+    dir: outputs/${experiments.general.project_name}_${experiments.general.experiment_type}_${now:%Y-%m-%d_%H-%M-%S}

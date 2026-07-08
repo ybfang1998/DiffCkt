@@ -6,6 +6,7 @@ import warnings
 from tqdm import tqdm
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
+import torch.distributions as dist
 
 class CircuitDataset(Dataset):
     """PyTorch Dataset for circuit graph data with fixed-size tensors.
@@ -26,17 +27,25 @@ class CircuitDataset(Dataset):
                 - node_mask: [22] node masks (bool)
         """
         self.data = data_list
+        X_dist = [0] * (22 + 1)  # Initialize distribution for node features
+        for i, g in enumerate(self.data):
+            X_dist[g['node_mask'].sum().item()] += 1
+        
+        self.X_dist = torch.tensor(X_dist, dtype=torch.float)
+        self.X_dist = dist.Categorical(probs=self.X_dist)
 
     def __len__(self):
         return len(self.data)
     
     def __getitem__(self, idx):
         sample = self.data[idx]
+        n_nodes = sample['node_mask'].sum()  # Count of valid nodes
         return { 
-            'X': torch.from_numpy(sample['X']).float(),  # convert to torch.tensor
+            'X': torch.from_numpy(sample['X'][:, :-2]).float(),  # convert to torch.tensor & remove the last two dimensions of parameters
             'E': torch.from_numpy(sample['E']).float(),
-            'Y': torch.from_numpy(sample['Y']).float(),
-            'node_mask': torch.from_numpy(sample['node_mask']).bool()  
+            'y': torch.from_numpy(sample['Y']).float(),
+            'node_mask': torch.from_numpy(sample['node_mask']).bool(),
+            'n_nodes': torch.tensor(n_nodes).float()  # number of nodes in the circuit
         }
 
 
@@ -79,12 +88,13 @@ def unzip_all_data_chunks():
     print("Starting data chunk extraction of data_chunks_*.zip files...")
     pattern = re.compile(r'^data_chunks_\d+\.zip$')
     current_dir = os.getcwd()
+    zip_dir = os.path.join(current_dir, "dataset")
     target_dir = os.path.join(current_dir, "unzipped_data")
     
     os.makedirs(target_dir, exist_ok=True)
     tqdm.write(f"Extraction directory: {target_dir}")
 
-    zip_files = [f for f in os.listdir(current_dir) if pattern.match(f)]
+    zip_files = [f for f in os.listdir(zip_dir) if pattern.match(f)]
     if not zip_files:
         tqdm.write("No data_chunks_*.zip files found")
         return
@@ -92,7 +102,7 @@ def unzip_all_data_chunks():
     with tqdm(total=len(zip_files), unit="file", desc="Overall progress") as main_pbar:
         success_count = 0
         for zip_file in zip_files:
-            zip_path = os.path.join(current_dir, zip_file)
+            zip_path = os.path.join(zip_dir, zip_file)
             if unzip_with_progress(zip_path, target_dir):
                 success_count += 1
             main_pbar.update(1)
@@ -120,7 +130,7 @@ def load_data(dir_path='unzipped_data'):
             # Display current filename
             pbar.set_postfix(file=file)
             # Load data (with simulated sub-progress)
-            data_chunk = torch.load(file_path)
+            data_chunk = torch.load(file_path, weights_only=False)
             data_list.extend(data_chunk)
 
     circuit_dataset = CircuitDataset(data_list) 
