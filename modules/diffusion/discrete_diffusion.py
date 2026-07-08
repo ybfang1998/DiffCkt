@@ -34,7 +34,9 @@ class DiscreteDiffusion(pl.LightningModule):
 
         self.noise_schedule = PredefinedNoiseScheduleDiscrete('cosine',
                                                               timesteps=self.T)
-        self.transition_model = DiscreteUniformTransition(self.output_dims['X'], self.output_dims['E'], self.output_dims['y'])
+        # The dimension of the transition matrix for E is 2 because we only have two classes for each channel of edge: 0 and 1.
+        self.transition_model = DiscreteUniformTransition(self.output_dims['X'], 2, self.output_dims['y'])
+        #self.transition_model = DiscreteUniformTransition(self.output_dims['X'], self.output_dims['E'], self.output_dims['y'])
 
 
         cfg_graph_transformer = cfg.model.GraphTransformer
@@ -140,7 +142,7 @@ class DiscreteDiffusion(pl.LightningModule):
 
         # Compute transition probabilities
         probX = X @ Qtb.X  # (bs, n_d, dx_d_out)
-        probE = torch.sigmoid(E.float() @ Qtb.E.unsqueeze(1))
+        probE = utils.to_tf_device(F.one_hot(E, num_classes=2), self.device) @ Qtb.E.unsqueeze(1).unsqueeze(1)  # (bs, n_d, n_n, de_out, 2)
 
         sampled_t = diffusion_utils.sample_discrete_features(probX, probE, node_mask)
 
@@ -253,12 +255,13 @@ class DiscreteDiffusion(pl.LightningModule):
                                                                                            Qsb=Qsb.E,
                                                                                            Qtb=Qtb.E,
                                                                                            edge_loss_fn=self.edge_loss_fn)
-        pred_E = pred_E.reshape((bs, -1, pred_E.shape[-1]))
-        weighted_E = pred_E.unsqueeze(-1) * p_s_and_t_given_0_E        # bs, N, d0, d_t-1
+        pred_E_two_hot = torch.stack([1.0 - pred_E, pred_E], dim=-1)
+        pred_E_flat = pred_E_two_hot.flatten(start_dim=1, end_dim=-2)
+        weighted_E = pred_E_flat.unsqueeze(-1) * p_s_and_t_given_0_E
         unnormalized_prob_E = weighted_E.sum(dim=-2)
         unnormalized_prob_E[torch.sum(unnormalized_prob_E, dim=-1) == 0] = 1e-5
         prob_E = unnormalized_prob_E / torch.sum(unnormalized_prob_E, dim=-1, keepdim=True)
-        prob_E = torch.sigmoid(prob_E.reshape(bs, n, n, pred_E.shape[-1]))  # bs, n, n, n_edge_types
+        prob_E = prob_E.reshape(bs, n, n, 25, 2)
 
         sampled_s = diffusion_utils.sample_discrete_features(prob_X, prob_E, node_mask)
 

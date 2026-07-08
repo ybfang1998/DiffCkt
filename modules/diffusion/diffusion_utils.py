@@ -65,7 +65,7 @@ def sample_discrete_features(probX, probE, node_mask):
     probE[diag_mask.bool()] = 1 / probE.shape[-1]
 
     # Sample E
-    E_t = torch.bernoulli(probE).reshape(bs, n, n, 5, 5)  # (bs, n, n, de_out)
+    E_t = torch.bernoulli(probE[..., 1]).reshape(bs, n, n, 5, 5)
 
     upper_mask = torch.triu(torch.ones(n, n, device=E_t.device), diagonal=1).bool().unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
     E_t_upper = torch.where(upper_mask, E_t, torch.zeros_like(E_t))
@@ -111,9 +111,9 @@ def compute_batched_over0_posterior_distribution(X_t, Qt, Qsb, Qtb, edge_loss_fn
     # Flatten feature tensors
     # Careful with this line. It does nothing if X is a node feature. If X is an edge features it maps to
     # bs x (n ** 2) x d for the case of CE edge loss, and bs x (n ** 2 * n_edge_types) x d for the case of BCE edge loss. The transition matrices should be computed accordingly.
-    # if edge_loss_fn == 'BCE':
-    #     X_t = X_t.to(torch.float32)
-    #     X_t = torch.stack([1.0 - X_t, X_t], dim=-1)
+    if edge_loss_fn == 'BCE':
+        X_t = X_t.to(torch.float32)
+        X_t = torch.stack([1.0 - X_t, X_t], dim=-1)
     X_t = X_t.flatten(start_dim=1, end_dim=-2).to(torch.float32)            # bs x N x dt
 
     Qt_T = Qt.transpose(-1, -2)                 # bs, dt, d_t-1

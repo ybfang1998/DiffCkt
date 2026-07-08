@@ -65,7 +65,7 @@ def train_DDM(cfg, project_name, train_loader, experiment_type, node_dist, model
     trainer = Trainer(gradient_clip_val=cfg.train.clip_grad,
                         # strategy="find_unused_parameters_true",  # Needed to load old checkpoints
                         accelerator='gpu' if use_gpu else 'cpu',
-                        devices=cfg.train.gpus if use_gpu else 1,
+                        devices=[1] if use_gpu else 1,
                         max_epochs=cfg.experiments.train.epochs,
                         # check_val_every_n_epoch=cfg.general.check_val_every_n_epochs,
                         fast_dev_run=experiment_type == 'debug',

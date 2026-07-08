@@ -2,14 +2,14 @@ general:
   project_name: 'DiffCkt_Diffckt'
   model_name: 'DiffCkt'
   dataset_name: 'Diffckt'
-  wandb: 'offline'
-  experiment_type: 'sample'
+  wandb: 'online'
+  experiment_type: 'train'
 train:
   batch_size: 256
   lr: 0.0002
   weight_decay: 1e-12
   lambda_train: [1, 5]
-  epochs: 300
+  epochs: 100
   edge_output_dim: 5
   edge_loss: 'BCE'
   edge_activation: 'sigmoid'

@@ -3,6 +3,7 @@ outputs/
 .idea/
 test.ipynb
 /datasets/
+/dataset/
 simulation/
 /unzipped_data/
 .DS_Store
