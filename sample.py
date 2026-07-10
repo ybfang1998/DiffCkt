@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import warnings
 warnings.filterwarnings("ignore", category=PossibleUserWarning)
 
-def sample(cfg, experiment_type, model_path, predict_loader):
+def sample(cfg, experiment_type, model_path, predict_loader, results_path):
     use_gpu = cfg.train.gpus > 0 and torch.cuda.is_available()
     model = DiscreteDiffusion.load_from_checkpoint(model_path, weights_only=False)
     trainer = Trainer(gradient_clip_val=cfg.train.clip_grad,
@@ -36,7 +36,7 @@ def sample(cfg, experiment_type, model_path, predict_loader):
             all_G.append(batch_out["G"])
 
     results = {'G': all_G}
-    with open('generated_results.pkl', 'wb') as f:
+    with open(results_path, 'wb') as f:
         pickle.dump(results, f)
 
 @hydra.main(version_base='1.3', config_path='./modules/configs', config_name='config')
@@ -56,6 +56,7 @@ def main(cfg: DictConfig):
         predict_loader = DataLoader(predict_dataset, batch_size=cfg.experiments.test.batch_size)
 
     model_path = to_absolute_path(cfg.experiments.test.model_path)
-    sample(cfg, experiment_type, model_path, predict_loader)
+    results_path = to_absolute_path(cfg.experiments.test.results_path)
+    sample(cfg, experiment_type, model_path, predict_loader, results_path)
 if __name__ == '__main__':
     main()

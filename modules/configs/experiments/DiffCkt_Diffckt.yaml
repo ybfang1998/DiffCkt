@@ -2,8 +2,8 @@ general:
   project_name: 'DiffCkt_Diffckt'
   model_name: 'DiffCkt'
   dataset_name: 'Diffckt'
-  wandb: 'online'
-  experiment_type: 'train'
+  wandb: 'offline'
+  experiment_type: 'sample'
 train:
   batch_size: 256
   lr: 0.0002
@@ -17,4 +17,5 @@ test:
   n_samples: 1000
   batch_size: 50
   random_num_nodes: True
-  model_path: 'outputs/last.ckpt'
+  model_path: 'outputs/epoch=95.ckpt'
+  results_path: 'outputs/Sampled_Results/DiffCkt_Diffckt_generated_1000_results3.pkl'
